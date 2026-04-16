@@ -1,12 +1,30 @@
 #!/bin/bash
 
+# If not running inside the container, delegate to docker compose.
+# Inside the container, /var/www/artisan exists; on the host it does not.
+if [ ! -f /var/www/artisan ]; then
+    SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+    cd "$SCRIPT_DIR" || exit 1
+
+    if ! command -v docker >/dev/null 2>&1; then
+        echo "Error: docker is not installed or not on PATH."
+        echo "Please install Docker Desktop or run this script inside the app container."
+        exit 1
+    fi
+
+    if ! docker compose ps --status=running app 2>/dev/null | grep -q wc_app; then
+        echo "App container is not running. Starting services..."
+        docker compose up -d || { echo "Failed to start containers."; exit 1; }
+    fi
+
+    exec docker compose exec -T app bash /var/www/run_tests.sh
+fi
+
 echo "============================================"
 echo " Workforce Compliance Platform - Test Runner"
 echo "============================================"
 
-if [ -f /var/www/artisan ]; then
-    cd /var/www
-fi
+cd /var/www
 
 if [ ! -d "vendor" ]; then
     echo "Installing dependencies..."

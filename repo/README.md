@@ -39,14 +39,17 @@ Expected response:
 
 ### Run Tests
 
+From the project root (host machine) just run:
+
 ```bash
-docker compose exec app bash /var/www/run_tests.sh
+bash run_tests.sh
 ```
 
-Or directly:
-```bash
-docker compose exec app bash -c "php artisan config:clear && php vendor/bin/phpunit --coverage-text"
-```
+The script auto-detects its environment:
+- If run on the host, it starts the `app` container (if not already up) and executes the suite inside it via `docker compose exec`.
+- If run inside the container, it runs the tests directly against the in-memory SQLite DB.
+
+The single command executes all three suites (`unit_tests/`, `API_tests/`, and `tests/` with coverage) and prints a consolidated PASS/FAIL summary.
 
 ### Stop the Application
 

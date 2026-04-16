@@ -20,6 +20,7 @@ class RoleConfigSeeder extends Seeder
         // Create default system admin only if none exists
         if (!User::where('role', 'system_admin')->exists()) {
             User::create([
+                'username' => 'system_admin',
                 'first_name' => 'System',
                 'last_name' => 'Admin',
                 'email' => 'admin@workforce.local',

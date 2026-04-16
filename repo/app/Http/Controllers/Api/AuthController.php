@@ -17,6 +17,7 @@ class AuthController extends Controller
         $validated = $request->validate([
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
+            'username' => 'required|string|max:255|unique:users,username|regex:/^[a-zA-Z0-9_]+$/',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => [
                 'required',
@@ -44,6 +45,7 @@ class AuthController extends Controller
                 'id' => $user->id,
                 'first_name' => $user->first_name,
                 'last_name' => $user->last_name,
+                'username' => $user->username,
                 'email' => $user->email,
                 'role' => $user->role,
             ],
@@ -54,12 +56,12 @@ class AuthController extends Controller
     public function login(Request $request): JsonResponse
     {
         $request->validate([
-            'email' => 'required|string|email',
+            'username' => 'required|string',
             'password' => 'required|string',
         ]);
 
-        $lockoutKey = 'login_attempts:' . $request->email;
-        $lockoutUntilKey = 'login_lockout:' . $request->email;
+        $lockoutKey = 'login_attempts:' . $request->username;
+        $lockoutUntilKey = 'login_lockout:' . $request->username;
 
         // Check if locked out
         if (Cache::has($lockoutUntilKey)) {
@@ -74,7 +76,7 @@ class AuthController extends Controller
             Cache::forget($lockoutUntilKey);
         }
 
-        $user = User::where('email', $request->email)->first();
+        $user = User::where('username', $request->username)->first();
 
         if (!$user || !Hash::check($request->password, $user->password)) {
             // Increment failed attempts
@@ -117,6 +119,7 @@ class AuthController extends Controller
                 'id' => $user->id,
                 'first_name' => $user->first_name,
                 'last_name' => $user->last_name,
+                'username' => $user->username,
                 'email' => $user->email,
                 'role' => $user->role,
             ],
@@ -142,6 +145,7 @@ class AuthController extends Controller
                 'id' => $user->id,
                 'first_name' => $user->first_name,
                 'last_name' => $user->last_name,
+                'username' => $user->username,
                 'email' => $user->email,
                 'role' => $user->role,
                 'disabled' => $user->disabled,

@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('workflow_definitions', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->string('slug')->unique();
+            $table->string('slug');
             $table->unsignedInteger('version')->default(1);
             $table->json('nodes'); // workflow node definitions with conditional branches
             $table->enum('approval_mode', ['all_approve', 'any_approve'])->default('all_approve');
@@ -19,6 +19,9 @@ return new class extends Migration
             $table->foreignId('escalation_role_user_id')->nullable()->constrained('users')->nullOnDelete();
             $table->boolean('active')->default(true);
             $table->timestamps();
+
+            $table->unique(['slug', 'version']);
+            $table->index('slug');
         });
 
         Schema::create('workflow_instances', function (Blueprint $table) {
@@ -34,10 +37,13 @@ return new class extends Migration
             $table->timestamp('completed_at')->nullable();
             $table->timestamp('escalated_at')->nullable();
             $table->text('escalation_note')->nullable();
+            $table->json('node_approvals')->nullable(); // tracks per-node approval state for parallel approval
+            $table->timestamp('timeout_at')->nullable(); // when current node times out
             $table->timestamps();
 
             $table->index(['entity_type', 'entity_id']);
             $table->index('status');
+            $table->index('timeout_at');
         });
     }
 

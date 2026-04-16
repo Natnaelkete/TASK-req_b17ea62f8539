@@ -14,6 +14,7 @@ class WorkflowInstance extends Model
         'workflow_definition_id', 'entity_type', 'entity_id',
         'current_node', 'status', 'initiated_by', 'assigned_to',
         'started_at', 'completed_at', 'escalated_at', 'escalation_note',
+        'node_approvals', 'timeout_at',
     ];
 
     protected function casts(): array
@@ -22,6 +23,8 @@ class WorkflowInstance extends Model
             'started_at' => 'datetime',
             'completed_at' => 'datetime',
             'escalated_at' => 'datetime',
+            'timeout_at' => 'datetime',
+            'node_approvals' => 'array',
         ];
     }
 

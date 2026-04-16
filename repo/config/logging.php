@@ -9,7 +9,7 @@ return [
     'channels' => [
         'stack' => [
             'driver' => 'stack',
-            'channels' => explode(',', env('LOG_STACK', 'single')),
+            'channels' => explode(',', env('LOG_STACK', 'single,structured')),
             'ignore_exceptions' => false,
         ],
         'single' => [
@@ -17,6 +17,16 @@ return [
             'path' => storage_path('logs/laravel.log'),
             'level' => env('LOG_LEVEL', 'debug'),
             'replace_placeholders' => true,
+        ],
+        'structured' => [
+            'driver' => 'monolog',
+            'handler' => Monolog\Handler\StreamHandler::class,
+            'formatter' => Monolog\Formatter\JsonFormatter::class,
+            'with' => [
+                'stream' => storage_path('logs/structured.log'),
+            ],
+            'level' => env('LOG_LEVEL', 'debug'),
+            'processors' => [Monolog\Processor\PsrLogMessageProcessor::class],
         ],
         'daily' => [
             'driver' => 'daily',

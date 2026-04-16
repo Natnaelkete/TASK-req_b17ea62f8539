@@ -106,6 +106,13 @@ class ResultVersionController extends Controller
         $rv = ResultVersion::with('job')->findOrFail($id);
         $user = $request->user();
 
+        // Access control: non-public results restricted to creator, admin, compliance_reviewer, or assigned inspector
+        if ($rv->status !== 'public') {
+            if (!$this->canAccessResultVersion($rv, $user)) {
+                return response()->json(['message' => 'Forbidden.'], 403);
+            }
+        }
+
         $data = $rv->toArray();
 
         // Apply field masking to result data based on role
@@ -120,7 +127,13 @@ class ResultVersionController extends Controller
 
     public function history(Request $request, int $id): JsonResponse
     {
-        $rv = ResultVersion::findOrFail($id);
+        $rv = ResultVersion::with('job')->findOrFail($id);
+        $user = $request->user();
+
+        // Access control: only creator, admin, compliance_reviewer, or assigned inspector
+        if (!$this->canAccessResultVersion($rv, $user)) {
+            return response()->json(['message' => 'Forbidden.'], 403);
+        }
 
         $allVersions = ResultVersion::where('job_id', $rv->job_id)
             ->orderBy('version_number', 'desc')
@@ -132,6 +145,31 @@ class ResultVersionController extends Controller
             'versions' => $allVersions,
             'audit_trail' => $audits,
         ]);
+    }
+
+    /**
+     * Check if a user can access a result version based on ownership/role.
+     */
+    private function canAccessResultVersion(ResultVersion $rv, $user): bool
+    {
+        // Admins and compliance reviewers can access all result versions
+        if ($user->hasAnyRole(['system_admin', 'compliance_reviewer'])) {
+            return true;
+        }
+
+        // Creator can access their own result versions
+        if ($rv->created_by === $user->id) {
+            return true;
+        }
+
+        // Inspector assigned to the related job's inspections can access
+        if ($user->hasRole('inspector') && $rv->job) {
+            return $rv->job->inspections()
+                ->where('inspector_id', $user->id)
+                ->exists();
+        }
+
+        return false;
     }
 
     private function createSnapshot(ResultVersion $rv): array

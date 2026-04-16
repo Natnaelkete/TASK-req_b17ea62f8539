@@ -12,6 +12,8 @@ use App\Http\Controllers\Api\MessageController;
 use App\Http\Controllers\Api\WorkflowController;
 use App\Http\Controllers\Api\InspectionController;
 use App\Http\Controllers\Api\OfflineSyncController;
+use App\Http\Controllers\Api\ContentItemController;
+use App\Http\Controllers\Api\NotificationPreferenceController;
 
 // Health check - no auth required
 Route::get('/health', HealthController::class);
@@ -20,8 +22,8 @@ Route::get('/health', HealthController::class);
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
-// Protected routes
-Route::middleware('auth:sanctum')->group(function () {
+// Protected routes — trace middleware applied globally for observability
+Route::middleware(['auth:sanctum', 'trace'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
 
@@ -72,6 +74,21 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/offline-sync/upload', [OfflineSyncController::class, 'upload']);
     Route::get('/offline-sync/status/{idempotencyKey}', [OfflineSyncController::class, 'status']);
 
+    // Content item routes
+    Route::get('/content', [ContentItemController::class, 'index']);
+    Route::get('/content/{id}', [ContentItemController::class, 'show']);
+    Route::post('/content', [ContentItemController::class, 'store']);
+    Route::match(['put', 'patch'], '/content/{id}', [ContentItemController::class, 'update']);
+    Route::post('/content/{id}/publish', [ContentItemController::class, 'publish'])
+        ->middleware('role:system_admin,compliance_reviewer');
+    Route::post('/content/{id}/archive', [ContentItemController::class, 'archive']);
+
+    // Notification preference routes
+    Route::get('/notification-preferences', [NotificationPreferenceController::class, 'index']);
+    Route::post('/notification-preferences', [NotificationPreferenceController::class, 'store']);
+    Route::put('/notification-preferences/{id}', [NotificationPreferenceController::class, 'update']);
+    Route::delete('/notification-preferences/{id}', [NotificationPreferenceController::class, 'destroy']);
+
     // Workflow routes
     Route::middleware('role:system_admin,compliance_reviewer')->group(function () {
         Route::post('/workflow-definitions', [WorkflowController::class, 'storeDefinition']);
@@ -79,5 +96,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/workflow-instances', [WorkflowController::class, 'createInstance']);
         Route::put('/workflow-instances/{id}/advance', [WorkflowController::class, 'advanceInstance']);
         Route::get('/workflow-instances/{id}', [WorkflowController::class, 'showInstance']);
+        Route::post('/workflow-instances/process-timeouts', [WorkflowController::class, 'processTimeouts']);
+        Route::post('/offline-sync/retry', [OfflineSyncController::class, 'retryFailedBatches']);
     });
 });

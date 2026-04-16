@@ -19,12 +19,16 @@ return new class extends Migration
             $table->unsignedInteger('attempts')->default(0);
             $table->text('last_error')->nullable();
             $table->json('payload')->nullable();
+            $table->json('assembled_payload')->nullable(); // assembled from chunks
+            $table->json('chunk_checksums')->nullable(); // per-chunk integrity tracking
             $table->unsignedInteger('total_chunks')->default(1);
             $table->unsignedInteger('received_chunks')->default(0);
+            $table->timestamp('next_retry_at')->nullable(); // exponential backoff scheduling
             $table->timestamps();
 
             $table->index(['user_id', 'status']);
             $table->index('idempotency_key');
+            $table->index('next_retry_at');
         });
     }
 

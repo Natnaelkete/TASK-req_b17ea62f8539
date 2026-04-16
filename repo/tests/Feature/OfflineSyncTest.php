@@ -192,4 +192,131 @@ class OfflineSyncTest extends TestCase
         $response->assertStatus(200)
             ->assertJson(['message' => 'Batch requeued for retry.']);
     }
+
+    public function test_chunk_size_too_small_rejected(): void
+    {
+        $inspector = User::factory()->inspector()->create();
+
+        // Tiny payload < 2MB for multi-chunk upload
+        $response = $this->actingAs($inspector)->postJson('/api/offline-sync/upload', [
+            'idempotency_key' => 'chunk-too-small',
+            'device_id' => 'device-1',
+            'payload' => ['small' => 'data'],
+            'total_chunks' => 3,
+            'chunk_index' => 0,
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonFragment(['message' => 'Chunk size too small. Minimum chunk size is 2MB.']);
+    }
+
+    public function test_chunk_size_too_large_rejected(): void
+    {
+        $inspector = User::factory()->inspector()->create();
+
+        // Build a payload that serializes to > 5MB
+        $largeString = str_repeat('a', 6 * 1024 * 1024); // 6MB string
+        $response = $this->actingAs($inspector)->postJson('/api/offline-sync/upload', [
+            'idempotency_key' => 'chunk-too-large',
+            'device_id' => 'device-1',
+            'payload' => ['blob' => $largeString],
+            'total_chunks' => 3,
+            'chunk_index' => 0,
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonFragment(['message' => 'Chunk size too large. Maximum chunk size is 5MB.']);
+    }
+
+    public function test_exponential_backoff_sets_next_retry_at(): void
+    {
+        $inspector = User::factory()->inspector()->create();
+
+        // Bad inspection id to force failure
+        $this->actingAs($inspector)->postJson('/api/offline-sync/upload', [
+            'idempotency_key' => 'backoff-001',
+            'device_id' => 'device-1',
+            'payload' => [
+                'inspection_id' => 999999,
+                'data' => ['x' => 1],
+            ],
+        ])->assertStatus(201);
+
+        $batch = OfflineSyncBatch::where('idempotency_key', 'backoff-001')->first();
+        $this->assertEquals('failed', $batch->status);
+        $this->assertEquals(1, $batch->attempts);
+        $this->assertNotNull($batch->next_retry_at);
+
+        // After 1 attempt, backoff should be ~2 seconds from now (2^1)
+        $this->assertTrue($batch->next_retry_at->greaterThan(now()->subSecond()));
+        $this->assertTrue($batch->next_retry_at->lessThan(now()->addSeconds(5)));
+    }
+
+    public function test_retry_failed_batches_endpoint_retries_eligible_batches(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $inspector = User::factory()->inspector()->create();
+        $inspection = $this->createInspection();
+
+        // Batch eligible for retry (past next_retry_at)
+        OfflineSyncBatch::create([
+            'user_id' => $inspector->id,
+            'idempotency_key' => 'eligible-retry',
+            'device_id' => 'device-1',
+            'status' => 'failed',
+            'attempts' => 1,
+            'payload' => [
+                'inspection_id' => $inspection->id,
+                'data' => ['recover' => 'yes'],
+                'version' => 1,
+            ],
+            'next_retry_at' => now()->subSecond(),
+        ]);
+
+        // Batch NOT eligible (next_retry_at in future)
+        OfflineSyncBatch::create([
+            'user_id' => $inspector->id,
+            'idempotency_key' => 'pending-retry',
+            'device_id' => 'device-1',
+            'status' => 'failed',
+            'attempts' => 1,
+            'payload' => ['inspection_id' => $inspection->id, 'data' => ['x' => 1], 'version' => 1],
+            'next_retry_at' => now()->addMinutes(10),
+        ]);
+
+        $response = $this->actingAs($admin)->postJson('/api/offline-sync/retry');
+        $response->assertStatus(200);
+
+        $eligible = OfflineSyncBatch::where('idempotency_key', 'eligible-retry')->first();
+        $pending = OfflineSyncBatch::where('idempotency_key', 'pending-retry')->first();
+
+        $this->assertEquals('succeeded', $eligible->status);
+        $this->assertEquals('failed', $pending->status);
+    }
+
+    public function test_quarantine_after_max_attempts(): void
+    {
+        $inspector = User::factory()->inspector()->create();
+
+        OfflineSyncBatch::create([
+            'user_id' => $inspector->id,
+            'idempotency_key' => 'quarantine-test',
+            'device_id' => 'device-1',
+            'status' => 'failed',
+            'attempts' => 7, // one below max
+            'payload' => [
+                'inspection_id' => 999999,
+                'data' => ['x' => 1],
+            ],
+            'next_retry_at' => now()->subSecond(),
+        ]);
+
+        $admin = User::factory()->admin()->create();
+        $this->actingAs($admin)->postJson('/api/offline-sync/retry')->assertStatus(200);
+
+        $batch = OfflineSyncBatch::where('idempotency_key', 'quarantine-test')->first();
+        $this->assertEquals('quarantined', $batch->status);
+        $this->assertEquals(8, $batch->attempts);
+        $this->assertNull($batch->next_retry_at);
+    }
 }

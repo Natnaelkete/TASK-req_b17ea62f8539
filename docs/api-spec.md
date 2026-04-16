@@ -9,7 +9,24 @@ Base URL examples:
 
 ## Authentication
 
-### POST /api/auth/login
+### POST /api/register
+
+Register a new user account. Role is always forced to `general_user`; privileged roles must be assigned by an administrator.
+
+- Request body:
+  - `first_name` (string, required)
+  - `last_name` (string, required)
+  - `username` (string, required, unique, alphanumeric + underscore)
+  - `email` (string, required, unique)
+  - `password` (string, required, min 12 chars with upper/lower/digit/special)
+  - `password_confirmation` (string, required)
+  - `phone` (string, optional)
+
+- Responses:
+  - `201 Created`: Returns user info and access token.
+  - `422 Unprocessable Entity`: Validation errors.
+
+### POST /api/login
 
 Authenticate a user with username and password.
 
@@ -19,7 +36,25 @@ Authenticate a user with username and password.
 
 - Responses:
   - `200 OK`: Returns user info and access token.
-  - `401 Unauthorized`: Invalid credentials or account locked.
+  - `401 Unauthorized`: Invalid credentials.
+  - `403 Forbidden`: Account disabled.
+  - `429 Too Many Requests`: Account locked after 10 failed attempts (15-minute lockout).
+
+### POST /api/logout
+
+Revoke the current access token.
+
+- Auth: Bearer token.
+- Responses:
+  - `200 OK`
+
+### GET /api/me
+
+Get the currently authenticated user's profile.
+
+- Auth: Bearer token.
+- Responses:
+  - `200 OK`
 
 ---
 
@@ -77,7 +112,7 @@ Fetch employer details.
   - `200 OK`
   - `404 Not Found`
 
-### PATCH /api/employers/{id}/decision
+### POST /api/employers/{id}/review
 
 Approve or reject an employer.
 
@@ -305,38 +340,69 @@ Get message statistics for the current user.
 
 ## Workflow Engine
 
-### POST /api/workflows/definitions
+### POST /api/workflow-definitions
 
-Create or update a workflow definition.
+Create a new workflow definition. Supports slug+version uniqueness — the same slug can have multiple versions; newer versions auto-deactivate prior ones.
 
-- Auth: System Administrator.
-- Body includes:
-  - `name`
-  - `version`
-  - `definition` (JSON with nodes, branches, timeouts, escalation configuration)
+- Auth: System Administrator or Compliance Reviewer.
+- Body:
+  - `name` (string, required)
+  - `slug` (string, required)
+  - `nodes` (array, required; each node has `id`, `type`: `start|approval|decision|parallel|end`)
+  - `approval_mode` (`"all_approve"` or `"any_approve"`, optional, default `all_approve`)
+  - `timeout_hours` (integer, optional, default 48)
 
 - Responses:
   - `201 Created`
 
-### POST /api/workflows/instances
+### GET /api/workflow-definitions
 
-Start a workflow instance for a subject.
+List active workflow definitions.
+
+- Responses:
+  - `200 OK`
+
+### POST /api/workflow-instances
+
+Start a workflow instance for an entity.
 
 - Body:
-  - `workflow_definition_id`
-  - `subject_type`
-  - `subject_id`
+  - `workflow_definition_id` (integer, required)
+  - `entity_type` (string, required)
+  - `entity_id` (integer, required)
 
 - Responses:
   - `201 Created`
 
-### PATCH /api/workflows/instances/{id}
+### PUT /api/workflow-instances/{id}/advance
 
-Advance workflow, reassign, or complete tasks.
+Advance a workflow instance through its node graph. Supports parallel approval tracking and conditional branching.
+
+- Body:
+  - `action` (enum: `"approve"`, `"reject"`, `"escalate"`, `"reassign"`, required)
+  - `reason` (string, required)
+  - `assign_to` (integer, required when `action = "reassign"`)
 
 - Behavior:
-  - Writes workflow action audits for every state change.
+  - Writes a workflow action audit on every state change.
+  - Evaluates approval mode and required approvers before advancing.
 
+- Responses:
+  - `200 OK`
+  - `422 Unprocessable Entity` (if instance is already finalized)
+
+### GET /api/workflow-instances/{id}
+
+Retrieve workflow instance details and audit trail.
+
+- Responses:
+  - `200 OK`
+
+### POST /api/workflow-instances/process-timeouts
+
+Auto-escalate any workflow instances whose `timeout_at` has passed.
+
+- Auth: System Administrator.
 - Responses:
   - `200 OK`
 
@@ -344,7 +410,7 @@ Advance workflow, reassign, or complete tasks.
 
 ## Offline Inspection Sync
 
-### POST /api/inspections/assigned
+### GET /api/inspections/assigned/me
 
 Get inspections assigned to the current inspector for offline caching.
 
@@ -352,29 +418,153 @@ Get inspections assigned to the current inspector for offline caching.
 - Responses:
   - `200 OK` (list of inspections and related data)
 
-### POST /api/inspections/sync
+### POST /api/offline-sync/upload
 
-Upload inspection updates from an offline device.
+Upload inspection updates from an offline device. Supports chunked uploads and idempotent processing.
 
 - Auth: Inspector.
-- Headers:
-  - `X-Device-Id` (required)
 - Body:
-  - `batch_id`
-  - `idempotency_key`
-  - `chunks` (array of chunks with size 2–5 MB each)
-  - Inspection payloads with version and timestamps
+  - `idempotency_key` (string, required)
+  - `device_id` (string, required)
+  - `payload` (array, required — inspection data or chunk)
+  - `total_chunks` (integer, optional, 1-100)
+  - `chunk_index` (integer, optional, 0-based)
+  - `chunk_checksum` (string, optional, for per-chunk integrity)
 
 - Behavior:
+  - Enforces 2MB minimum and 5MB maximum per chunk for multi-chunk uploads.
   - Uses idempotency key to deduplicate.
-  - Applies conflict detection with version + `updated_at`.
-  - Applies merge rules favoring latest confirmed adjudication fields.
-  - Retries using exponential backoff up to 8 attempts; quarantines failing batches.
+  - For multi-chunk uploads, chunks are assembled and then processed when all received.
+  - Applies conflict detection using `version` and `updated_at`.
+  - Favors server adjudication fields when client version is older.
+  - Retries using exponential backoff (2^attempts seconds) up to 8 attempts; quarantines failing batches.
 
 - Responses:
-  - `202 Accepted` (batch queued or processed)
-  - `409 Conflict` (unresolvable conflict)
-  - `422 Unprocessable Entity`
+  - `201 Created` (new batch accepted)
+  - `200 OK` (resumed or assembled)
+  - `422 Unprocessable Entity` (validation or chunk size violation)
+
+### GET /api/offline-sync/status/{idempotencyKey}
+
+Retrieve the processing status of a sync batch.
+
+- Auth: Owning inspector.
+- Responses:
+  - `200 OK`
+  - `404 Not Found`
+
+### POST /api/offline-sync/retry
+
+Retry all failed batches whose backoff window has expired.
+
+- Auth: System Administrator or Compliance Reviewer.
+- Responses:
+  - `200 OK`
+
+---
+
+## Content Items
+
+### GET /api/content
+
+List content items. Drafts/archived items are only visible to their author or administrators.
+
+- Auth: Authenticated user.
+- Responses:
+  - `200 OK`
+
+### GET /api/content/{id}
+
+Retrieve a content item. Non-published items only visible to the author or administrators.
+
+- Responses:
+  - `200 OK`
+  - `403 Forbidden`
+  - `404 Not Found`
+
+### POST /api/content
+
+Create a new content item.
+
+- Body:
+  - `title` (string, required)
+  - `slug` (string, required, unique)
+  - `body` (string, required)
+  - `status` (enum: `"draft"`, `"published"`, `"archived"`, optional)
+
+- Behavior:
+  - Only administrators can set `status = "published"` directly on create.
+
+- Responses:
+  - `201 Created`
+  - `403 Forbidden` (non-admin attempting direct publish)
+
+### PATCH /api/content/{id}
+
+Update a content item. Only the author or administrators can edit.
+
+- Responses:
+  - `200 OK`
+  - `403 Forbidden`
+
+### POST /api/content/{id}/publish
+
+Publish a content item.
+
+- Auth: System Administrator or Compliance Reviewer only.
+- Responses:
+  - `200 OK`
+  - `403 Forbidden`
+  - `422 Unprocessable Entity` (already published)
+
+### POST /api/content/{id}/archive
+
+Archive a content item. Only author or administrators.
+
+- Responses:
+  - `200 OK`
+  - `403 Forbidden`
+
+---
+
+## Notification Preferences
+
+### GET /api/notification-preferences
+
+List the current user's notification preferences.
+
+- Responses:
+  - `200 OK`
+
+### POST /api/notification-preferences
+
+Create or update a notification preference (idempotent by `notification_type`).
+
+- Body:
+  - `notification_type` (string, required)
+  - `enabled` (boolean, required)
+
+- Responses:
+  - `201 Created`
+
+### PUT /api/notification-preferences/{id}
+
+Update a single preference. Users may only modify their own preferences.
+
+- Body:
+  - `enabled` (boolean, required)
+
+- Responses:
+  - `200 OK`
+  - `403 Forbidden`
+
+### DELETE /api/notification-preferences/{id}
+
+Remove a preference. Users may only delete their own preferences.
+
+- Responses:
+  - `200 OK`
+  - `403 Forbidden`
 
 ---
 

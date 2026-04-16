@@ -61,9 +61,13 @@ class MessageController extends Controller
         ], 201);
     }
 
-    public function markRead(int $id): JsonResponse
+    public function markRead(Request $request, int $id): JsonResponse
     {
         $message = Message::findOrFail($id);
+
+        if ($message->recipient_id !== $request->user()->id) {
+            return response()->json(['message' => 'Forbidden.'], 403);
+        }
 
         if ($message->read_at !== null) {
             return response()->json(['message' => 'Already read.']);

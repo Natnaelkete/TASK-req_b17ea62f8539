@@ -177,4 +177,75 @@ class ObjectionTest extends TestCase
         $response->assertStatus(200)
             ->assertJsonStructure(['data' => ['id', 'objection_id', 'status']]);
     }
+
+    public function test_adjudication_syncs_new_result_version(): void
+    {
+        $reviewer = User::factory()->complianceReviewer()->create();
+        $user = User::factory()->create();
+        $rv = $this->createPublicResult();
+
+        $objection = Objection::create([
+            'result_version_id' => $rv->id,
+            'filed_by' => $user->id,
+            'reason' => 'Data is incorrect.',
+            'status' => 'intake',
+        ]);
+        \App\Models\Ticket::create(['objection_id' => $objection->id, 'status' => 'intake']);
+
+        // Move through lifecycle to resolution
+        $this->actingAs($reviewer)->patchJson("/api/objections/{$objection->id}", ['status' => 'review']);
+        $this->actingAs($reviewer)->patchJson("/api/objections/{$objection->id}", ['status' => 'adjudication']);
+        $this->actingAs($reviewer)->patchJson("/api/objections/{$objection->id}", [
+            'status' => 'resolved',
+            'resolution_notes' => 'Corrections applied to results.',
+        ]);
+
+        // A new result version should have been created
+        $latestRv = \App\Models\ResultVersion::where('job_id', $rv->job_id)
+            ->orderBy('version_number', 'desc')
+            ->first();
+
+        $this->assertGreaterThan($rv->version_number, $latestRv->version_number);
+        $this->assertEquals('public', $latestRv->status);
+        $this->assertNotNull($latestRv->snapshot);
+        $this->assertNotNull($latestRv->published_at);
+        $this->assertArrayHasKey('objection_adjudication', $latestRv->data);
+        $this->assertEquals('resolved', $latestRv->data['objection_adjudication']['decision']);
+        $this->assertEquals($objection->id, $latestRv->data['objection_adjudication']['objection_id']);
+
+        // Audit record should exist for the sync
+        $this->assertDatabaseHas('result_decision_audits', [
+            'result_version_id' => $latestRv->id,
+            'action' => 'adjudication_sync',
+        ]);
+    }
+
+    public function test_dismissed_objection_also_creates_result_version(): void
+    {
+        $reviewer = User::factory()->complianceReviewer()->create();
+        $user = User::factory()->create();
+        $rv = $this->createPublicResult();
+
+        $objection = Objection::create([
+            'result_version_id' => $rv->id,
+            'filed_by' => $user->id,
+            'reason' => 'Baseless claim.',
+            'status' => 'intake',
+        ]);
+        \App\Models\Ticket::create(['objection_id' => $objection->id, 'status' => 'intake']);
+
+        $this->actingAs($reviewer)->patchJson("/api/objections/{$objection->id}", ['status' => 'review']);
+        $this->actingAs($reviewer)->patchJson("/api/objections/{$objection->id}", ['status' => 'adjudication']);
+        $this->actingAs($reviewer)->patchJson("/api/objections/{$objection->id}", [
+            'status' => 'dismissed',
+            'resolution_notes' => 'Objection dismissed — no merit.',
+        ]);
+
+        $latestRv = \App\Models\ResultVersion::where('job_id', $rv->job_id)
+            ->orderBy('version_number', 'desc')
+            ->first();
+
+        $this->assertGreaterThan($rv->version_number, $latestRv->version_number);
+        $this->assertEquals('dismissed', $latestRv->data['objection_adjudication']['decision']);
+    }
 }

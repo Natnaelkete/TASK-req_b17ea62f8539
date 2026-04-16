@@ -34,10 +34,12 @@ class ObjectionApiTest extends TestCase
     {
         $user = User::factory()->create();
         $rv = $this->publicResult();
-        $this->actingAs($user)->postJson("/api/result-versions/{$rv->id}/objections", [
+        $response = $this->actingAs($user)->postJson("/api/result-versions/{$rv->id}/objections", [
             'reason' => 'Errors found.',
-        ])->assertStatus(201)->assertJsonPath('data.status', 'intake');
-        $this->assertDatabaseHas('tickets', ['objection_id' => 1]);
+        ]);
+        $response->assertStatus(201)->assertJsonPath('data.status', 'intake');
+        $objectionId = $response->json('data.id');
+        $this->assertDatabaseHas('tickets', ['objection_id' => $objectionId]);
     }
 
     /** @test */

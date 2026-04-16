@@ -4,21 +4,17 @@ echo "============================================"
 echo " Workforce Compliance Platform - Test Runner"
 echo "============================================"
 
-# Determine if running inside Docker or locally
 if [ -f /var/www/artisan ]; then
     cd /var/www
 fi
 
-# Check if vendor directory exists
 if [ ! -d "vendor" ]; then
     echo "Installing dependencies..."
     composer install --no-interaction || { echo "Composer install failed"; exit 1; }
 fi
 
-# Clear config cache so phpunit.xml env vars take effect
 php artisan config:clear 2>/dev/null || true
 
-# Swap .env to testing config so all tests use SQLite
 if [ -f .env ] && [ -f .env.testing ]; then
     cp .env .env.backup.run_tests
     cp .env.testing .env
@@ -26,7 +22,6 @@ fi
 
 FINAL_EXIT=0
 
-# -----------------------------------------------
 echo ""
 echo "============================================"
 echo " [1/3] Running unit_tests/"
@@ -35,7 +30,7 @@ echo "        boundary conditions)"
 echo "============================================"
 echo ""
 
-php vendor/bin/phpunit --testsuite UnitTests --no-coverage
+DB_CONNECTION=sqlite DB_DATABASE=:memory: php vendor/bin/phpunit --testsuite UnitTests --no-coverage
 UNIT_EXIT=$?
 
 if [ $UNIT_EXIT -eq 0 ]; then
@@ -47,16 +42,15 @@ else
     FINAL_EXIT=1
 fi
 
-# -----------------------------------------------
 echo ""
 echo "============================================"
 echo " [2/3] Running API_tests/"
 echo "       (normal inputs, missing params,"
-echo "        permission errors)"
+echo "        permission errors, IDOR)"
 echo "============================================"
 echo ""
 
-php vendor/bin/phpunit --testsuite ApiTests --no-coverage
+DB_CONNECTION=sqlite DB_DATABASE=:memory: php vendor/bin/phpunit --testsuite ApiTests --no-coverage
 API_EXIT=$?
 
 if [ $API_EXIT -eq 0 ]; then
@@ -68,7 +62,6 @@ else
     FINAL_EXIT=1
 fi
 
-# -----------------------------------------------
 echo ""
 echo "============================================"
 echo " [3/3] Running tests/ with coverage"
@@ -76,14 +69,13 @@ echo "       (Unit + Feature)"
 echo "============================================"
 echo ""
 
-php vendor/bin/phpunit --testsuite Unit,Feature --coverage-text
+DB_CONNECTION=sqlite DB_DATABASE=:memory: php vendor/bin/phpunit --testsuite Unit,Feature --coverage-text
 CORE_EXIT=$?
 
 if [ $CORE_EXIT -ne 0 ]; then
     FINAL_EXIT=1
 fi
 
-# -----------------------------------------------
 echo ""
 echo "============================================"
 echo "              SUMMARY"
@@ -102,7 +94,6 @@ fi
 
 echo "============================================"
 
-# Restore original .env
 if [ -f .env.backup.run_tests ]; then
     mv .env.backup.run_tests .env
 fi

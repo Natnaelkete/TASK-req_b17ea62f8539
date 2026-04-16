@@ -31,9 +31,18 @@ class InspectionController extends Controller
         return response()->json($query->paginate($request->get('per_page', 15)));
     }
 
-    public function show(int $id): JsonResponse
+    public function show(Request $request, int $id): JsonResponse
     {
         $inspection = Inspection::with(['job', 'inspector', 'employer'])->findOrFail($id);
+        $user = $request->user();
+
+        if ($user->role === 'inspector' && $inspection->inspector_id !== $user->id) {
+            return response()->json(['message' => 'Forbidden.'], 403);
+        }
+        if ($user->role === 'general_user') {
+            return response()->json(['message' => 'Forbidden.'], 403);
+        }
+
         return response()->json(['data' => $inspection]);
     }
 
@@ -72,6 +81,13 @@ class InspectionController extends Controller
     {
         $inspection = Inspection::findOrFail($id);
         $user = $request->user();
+
+        if ($user->role === 'inspector' && $inspection->inspector_id !== $user->id) {
+            return response()->json(['message' => 'Forbidden.'], 403);
+        }
+        if (!$user->hasAnyRole(['system_admin', 'compliance_reviewer', 'inspector'])) {
+            return response()->json(['message' => 'Insufficient permissions.'], 403);
+        }
 
         $request->validate([
             'status' => 'sometimes|string|in:scheduled,in_progress,completed,cancelled,pending_sync',

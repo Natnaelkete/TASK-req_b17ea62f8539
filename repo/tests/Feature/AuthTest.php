@@ -185,7 +185,7 @@ class AuthTest extends TestCase
         $response->assertStatus(429);
     }
 
-    public function test_register_with_specific_role(): void
+    public function test_register_role_input_is_always_forced_to_general_user(): void
     {
         $response = $this->postJson('/api/register', [
             'first_name' => 'Inspector',
@@ -193,29 +193,14 @@ class AuthTest extends TestCase
             'email' => 'inspector@example.com',
             'password' => 'SecurePass@123',
             'password_confirmation' => 'SecurePass@123',
-            'role' => 'inspector',
+            'role' => 'system_admin', // attempt escalation
         ]);
 
         $response->assertStatus(201);
         $this->assertDatabaseHas('users', [
             'email' => 'inspector@example.com',
-            'role' => 'inspector',
+            'role' => 'general_user', // must be forced
         ]);
-    }
-
-    public function test_register_with_invalid_role_fails(): void
-    {
-        $response = $this->postJson('/api/register', [
-            'first_name' => 'Bad',
-            'last_name' => 'Role',
-            'email' => 'bad@example.com',
-            'password' => 'SecurePass@123',
-            'password_confirmation' => 'SecurePass@123',
-            'role' => 'superadmin',
-        ]);
-
-        $response->assertStatus(422)
-            ->assertJsonValidationErrors('role');
     }
 
     public function test_login_with_nonexistent_email(): void

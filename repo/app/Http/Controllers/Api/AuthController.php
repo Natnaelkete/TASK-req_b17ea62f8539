@@ -29,11 +29,10 @@ class AuthController extends Controller
                 'confirmed',
             ],
             'phone' => 'nullable|string|max:20',
-            'role' => 'sometimes|string|in:' . implode(',', User::ROLES),
         ]);
 
-        // Default role is general_user
-        $validated['role'] = $validated['role'] ?? 'general_user';
+        // Force role to general_user — privileged roles must be assigned by admin only
+        $validated['role'] = 'general_user';
 
         $user = User::create($validated);
 

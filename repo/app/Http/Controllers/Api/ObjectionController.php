@@ -111,13 +111,56 @@ class ObjectionController extends Controller
                 $objection->ticket->update(['status' => $ticketStatus]);
             }
 
-            // If adjudicated (resolved/dismissed), sync back to result version
+            // If adjudicated (resolved/dismissed), sync decision into result version
             if (in_array($newStatus, ['resolved', 'dismissed'])) {
                 $objection->update(['resolution_notes' => $request->resolution_notes]);
                 if ($objection->ticket) {
                     $objection->ticket->update([
                         'adjudication_summary' => $request->resolution_notes,
                     ]);
+                }
+
+                // Create a new result version incorporating the adjudication outcome
+                $sourceRv = $objection->resultVersion;
+                if ($sourceRv) {
+                    $latestVersionNumber = ResultVersion::where('job_id', $sourceRv->job_id)
+                        ->max('version_number') ?? 0;
+
+                    $adjudicationData = array_merge($sourceRv->data ?? [], [
+                        'objection_adjudication' => [
+                            'objection_id' => $objection->id,
+                            'decision' => $newStatus,
+                            'resolution_notes' => $request->resolution_notes,
+                            'adjudicated_at' => now()->toIso8601String(),
+                            'adjudicated_by' => $user->id,
+                        ],
+                    ]);
+
+                    $newRv = ResultVersion::create([
+                        'job_id' => $sourceRv->job_id,
+                        'version_number' => $latestVersionNumber + 1,
+                        'status' => 'public',
+                        'data' => $adjudicationData,
+                        'snapshot' => [
+                            'version_number' => $latestVersionNumber + 1,
+                            'data' => $adjudicationData,
+                            'notes' => "Adjudication outcome: {$newStatus}. " . ($request->resolution_notes ?? ''),
+                            'created_by' => $user->id,
+                            'snapshotted_at' => now()->toIso8601String(),
+                        ],
+                        'notes' => "Adjudication result: {$newStatus}",
+                        'created_by' => $user->id,
+                        'published_at' => now(),
+                    ]);
+
+                    $newRv->logAudit(
+                        'adjudication_sync',
+                        $user->id,
+                        $user->role,
+                        "New result version from objection adjudication ({$newStatus}).",
+                        ['prior_version' => $sourceRv->version_number],
+                        ['new_version' => $newRv->version_number, 'status' => 'public'],
+                    );
                 }
             }
         }
@@ -137,9 +180,18 @@ class ObjectionController extends Controller
         ]);
     }
 
-    public function show(int $id): JsonResponse
+    public function show(Request $request, int $id): JsonResponse
     {
         $objection = Objection::with(['files', 'ticket', 'filer', 'resultVersion'])->findOrFail($id);
+        $user = $request->user();
+
+        $isFiler = $objection->filed_by === $user->id;
+        $isAssigned = $objection->ticket && $objection->ticket->assigned_to === $user->id;
+        $isPrivileged = $user->hasAnyRole(['system_admin', 'compliance_reviewer']);
+
+        if (!$isFiler && !$isAssigned && !$isPrivileged) {
+            return response()->json(['message' => 'Forbidden.'], 403);
+        }
 
         return response()->json(['data' => $objection]);
     }

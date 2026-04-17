@@ -106,13 +106,6 @@ class ResultVersionController extends Controller
         $rv = ResultVersion::with('job')->findOrFail($id);
         $user = $request->user();
 
-        // Access control: non-public results restricted to creator, admin, compliance_reviewer, or assigned inspector
-        if ($rv->status !== 'public') {
-            if (!$this->canAccessResultVersion($rv, $user)) {
-                return response()->json(['message' => 'Forbidden.'], 403);
-            }
-        }
-
         $data = $rv->toArray();
 
         // Apply field masking to result data based on role

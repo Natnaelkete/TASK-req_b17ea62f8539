@@ -74,9 +74,9 @@ class WorkflowController extends Controller
         $definition = WorkflowDefinition::findOrFail($request->workflow_definition_id);
         $nodes = $definition->nodes;
 
-        // Find the start node
+        // Find the start node — new instances begin at the start node itself.
         $startNode = collect($nodes)->firstWhere('type', 'start');
-        $firstNodeId = $startNode['next'] ?? ($startNode['id'] ?? 'start');
+        $firstNodeId = $startNode['id'] ?? 'start';
 
         $instance = WorkflowInstance::create([
             'workflow_definition_id' => $request->workflow_definition_id,
@@ -169,6 +169,12 @@ class WorkflowController extends Controller
                 ]);
             }
         } elseif ($action === 'approve') {
+            // Start nodes have no approval semantics — auto-advance past them before recording approval.
+            if ($currentNodeDef && ($currentNodeDef['type'] ?? null) === 'start') {
+                $nextId = $currentNodeDef['next'] ?? 'end';
+                $instance->current_node = $nextId;
+                $currentNodeDef = $nodes->firstWhere('id', $nextId);
+            }
             $this->handleApproval($instance, $user, $definition, $nodes, $currentNodeDef);
         }
 

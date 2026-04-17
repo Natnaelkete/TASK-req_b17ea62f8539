@@ -17,7 +17,7 @@ class AuthController extends Controller
         $validated = $request->validate([
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
-            'username' => 'required|string|max:255|unique:users,username|regex:/^[a-zA-Z0-9_]+$/',
+            'username' => 'sometimes|string|max:255|unique:users,username|regex:/^[a-zA-Z0-9_]+$/',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => [
                 'required',
@@ -34,6 +34,17 @@ class AuthController extends Controller
 
         // Force role to general_user — privileged roles must be assigned by admin only
         $validated['role'] = 'general_user';
+
+        // Auto-generate username from email local-part when not provided
+        if (empty($validated['username'])) {
+            $base = preg_replace('/[^a-zA-Z0-9_]/', '_', explode('@', $validated['email'])[0]);
+            $candidate = $base !== '' ? $base : 'user';
+            $suffix = 1;
+            while (User::where('username', $candidate)->exists()) {
+                $candidate = $base . '_' . $suffix++;
+            }
+            $validated['username'] = $candidate;
+        }
 
         $user = User::create($validated);
 

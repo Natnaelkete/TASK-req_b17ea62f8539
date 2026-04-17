@@ -1,9 +1,9 @@
 # Unified Test Coverage + README Audit Report (Strict Static Mode)
 
 ## Project Type Detection
-- Declared type at top of README: Missing (no explicit backend/fullstack/web/android/ios/desktop declaration at top section of [repo/README.md](repo/README.md#L1)).
-- Inferred type (light inspection): backend.
-- Evidence: API-only wording in README and architecture section ([repo/README.md](repo/README.md#L1), [repo/README.md](repo/README.md#L167)); Laravel API routing in [repo/routes/api.php](repo/routes/api.php#L19); no frontend package file found via workspace scan (no [repo/package.json](repo/package.json)).
+- Declared type at top of README: Present (`backend`) in [repo/README.md](repo/README.md#L3).
+- Inferred type (light inspection): backend (matches declared type).
+- Evidence: API-only wording in README and architecture section ([repo/README.md](repo/README.md#L1), [repo/README.md](repo/README.md#L201)); Laravel API routing in [repo/routes/api.php](repo/routes/api.php#L19); no frontend package file found via workspace scan (no [repo/package.json](repo/package.json)).
 
 ---
 
@@ -272,11 +272,12 @@ Uncovered exact method+path endpoints:
 - Pass (explicit health verification command and expected output): [repo/README.md](repo/README.md#L25).
 
 #### Environment Rules (no manual runtime install guidance)
-- Pass in README content (no npm/pip/apt install instructions; docker exec test run documented): [repo/README.md](repo/README.md#L43).
+- Pass. No npm/pip/apt/runtime install or manual DB setup instruction is present.
+- Evidence: [repo/README.md](repo/README.md#L91).
 
 #### Demo Credentials (auth exists)
-- Fail (strict). README provides only one admin credential pair, not credential set for all roles.
-- Evidence: only one account listed in test credentials section [repo/README.md](repo/README.md#L62), [repo/README.md](repo/README.md#L65), [repo/README.md](repo/README.md#L66), while multiple roles are documented at [repo/README.md](repo/README.md#L148).
+- Pass. README now provides username/email/password for all declared roles.
+- Evidence: credentials matrix at [repo/README.md](repo/README.md#L71), role list at [repo/README.md](repo/README.md#L181).
 
 ### 2.3 Engineering Quality Review
 - Tech stack clarity: Good ([repo/README.md](repo/README.md#L167)).
@@ -286,25 +287,49 @@ Uncovered exact method+path endpoints:
 - Workflow presentation: endpoint inventory broad and organized.
 
 ### 2.4 High Priority Issues
-1. Hard gate failure: missing demo credentials for all declared roles.
+- None.
 
 ### 2.5 Medium Priority Issues
-1. Project type is not explicitly declared at the top in required label form (backend/fullstack/web/android/ios/desktop).
-2. README should clarify whether docker compose and docker-compose are both supported if strict command parity is required by external evaluators.
+- None.
 
 ### 2.6 Low Priority Issues
-1. Could add a concise troubleshooting section for common docker startup failures.
+- None.
 
 ### 2.7 Hard Gate Failures
-1. Demo credentials gate failed for multi-role authenticated system.
+- None.
+
+### 2.8 README Score
+- Score: 96/100
+- Rationale:
+  - + Project type declaration is now explicit (`backend`).
+  - + Startup/access/verification instructions are clear and docker-oriented.
+  - + Credentials now include all roles with username/email/password.
+  - + Environment rules are satisfied (no runtime/manual DB setup guidance).
+
+### 2.9 Strict Revalidation Evidence (Fresh Pass)
+- Revalidation timestamp: 2026-04-17 (static-only).
+- Prohibited-pattern scan on README returned no matches for:
+  - `php artisan migrate`
+  - `migrate --seed`
+  - `npm install`
+  - `yarn install`
+  - `pnpm install`
+  - `pip install`
+  - `apt-get install`
+  - `brew install`
+- Positive-gate checks confirmed:
+  - Project type declaration at [repo/README.md](repo/README.md#L3).
+  - Startup command at [repo/README.md](repo/README.md#L15).
+  - Health verification at [repo/README.md](repo/README.md#L27).
+  - Full role credential matrix at [repo/README.md](repo/README.md#L71).
 
 ### README Verdict
-- FAIL
+- PASS
 
 ---
 
 ## Final Combined Verdicts
 1. Test Coverage Audit Verdict: PASS
-2. README Audit Verdict: FAIL
+2. README Audit Verdict: PASS
 
-Overall strict combined status: NOT ACCEPTED until README hard-gate issue is resolved.
+Overall strict combined status: ACCEPTED.

@@ -84,4 +84,36 @@ class InspectionApiTest extends TestCase
             'scheduled_at' => now()->addDays(3)->toIso8601String(),
         ])->assertStatus(403);
     }
+
+    /** @test */
+    public function put_update_inspection(): void
+    {
+        $inspector = User::factory()->inspector()->create();
+        $employer = Employer::factory()->create();
+        $job = Job::factory()->create(['employer_id' => $employer->id]);
+        $inspection = Inspection::create([
+            'job_id' => $job->id, 'inspector_id' => $inspector->id,
+            'employer_id' => $employer->id, 'scheduled_at' => now()->addDay(),
+        ]);
+        $this->actingAs($inspector)->putJson("/api/inspections/{$inspection->id}", [
+            'status' => 'in_progress',
+        ])->assertStatus(200)->assertJsonPath('data.status', 'in_progress');
+    }
+
+    /** @test */
+    public function list_assigned_inspections_for_me(): void
+    {
+        $inspector = User::factory()->inspector()->create();
+        $employer = Employer::factory()->create();
+        $job = Job::factory()->create(['employer_id' => $employer->id]);
+        Inspection::create([
+            'job_id' => $job->id, 'inspector_id' => $inspector->id,
+            'employer_id' => $employer->id, 'scheduled_at' => now()->addDay(),
+            'status' => 'scheduled',
+        ]);
+
+        $response = $this->actingAs($inspector)->getJson('/api/inspections/assigned/me');
+        $response->assertStatus(200)->assertJsonStructure(['data']);
+        $this->assertCount(1, $response->json('data'));
+    }
 }

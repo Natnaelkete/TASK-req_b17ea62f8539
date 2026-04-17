@@ -17,17 +17,32 @@ class RoleConfigSeeder extends Seeder
      */
     public function run(): void
     {
-        // Create default system admin only if none exists
-        if (!User::where('role', 'system_admin')->exists()) {
-            User::create([
-                'username' => 'system_admin',
-                'first_name' => 'System',
-                'last_name' => 'Admin',
-                'email' => 'admin@workforce.local',
-                'password' => Hash::make('Admin@12345678'),
-                'role' => 'system_admin',
-                'disabled' => false,
-            ]);
+        // Seed default demo accounts for every role (idempotent).
+        $demoUsers = [
+            ['username' => 'system_admin', 'first_name' => 'System', 'last_name' => 'Admin',
+                'email' => 'admin@workforce.local', 'password' => 'Admin@12345678', 'role' => 'system_admin'],
+            ['username' => 'compliance_reviewer', 'first_name' => 'Compliance', 'last_name' => 'Reviewer',
+                'email' => 'reviewer@workforce.local', 'password' => 'Reviewer@12345678', 'role' => 'compliance_reviewer'],
+            ['username' => 'employer_manager', 'first_name' => 'Employer', 'last_name' => 'Manager',
+                'email' => 'employer@workforce.local', 'password' => 'Employer@12345678', 'role' => 'employer_manager'],
+            ['username' => 'inspector', 'first_name' => 'Field', 'last_name' => 'Inspector',
+                'email' => 'inspector@workforce.local', 'password' => 'Inspector@12345678', 'role' => 'inspector'],
+            ['username' => 'general_user', 'first_name' => 'General', 'last_name' => 'User',
+                'email' => 'user@workforce.local', 'password' => 'User@12345678', 'role' => 'general_user'],
+        ];
+
+        foreach ($demoUsers as $u) {
+            if (!User::where('email', $u['email'])->exists()) {
+                User::create([
+                    'username' => $u['username'],
+                    'first_name' => $u['first_name'],
+                    'last_name' => $u['last_name'],
+                    'email' => $u['email'],
+                    'password' => Hash::make($u['password']),
+                    'role' => $u['role'],
+                    'disabled' => false,
+                ]);
+            }
         }
 
         // Seed masking rules (configurable, not hardcoded)

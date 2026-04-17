@@ -222,6 +222,26 @@ class JobTest extends TestCase
             ->assertJsonPath('data.title', 'Updated Title');
     }
 
+    public function test_put_update_job(): void
+    {
+        [$user, $employer] = $this->createEmployerWithOwner();
+        $job = Job::factory()->create(['employer_id' => $employer->id]);
+
+        $response = $this->actingAs($user)->putJson("/api/jobs/{$job->id}", [
+            'title' => 'Put Updated Title',
+            'salary_min' => 95000,
+            'salary_max' => 140000,
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJsonPath('data.title', 'Put Updated Title');
+
+        $this->assertDatabaseHas('jobs', [
+            'id' => $job->id,
+            'title' => 'Put Updated Title',
+        ]);
+    }
+
     public function test_unauthorized_user_cannot_create_job_for_other_employer(): void
     {
         $user = User::factory()->create(['role' => 'general_user']);

@@ -66,6 +66,15 @@ class JobApiTest extends TestCase
             ->assertStatus(200)->assertJsonPath('data.title', 'Updated');
     }
 
+    /** @test */
+    public function put_update_job_by_owner(): void
+    {
+        [$user, $employer] = $this->ownerAndEmployer();
+        $job = Job::factory()->create(['employer_id' => $employer->id]);
+        $this->actingAs($user)->putJson("/api/jobs/{$job->id}", ['title' => 'Put Updated'])
+            ->assertStatus(200)->assertJsonPath('data.title', 'Put Updated');
+    }
+
     // === Missing parameters ===
 
     /** @test */

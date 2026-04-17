@@ -113,6 +113,24 @@ class EmployerTest extends TestCase
             ->assertJsonPath('data.company_name', 'Updated Corp');
     }
 
+    public function test_put_update_employer(): void
+    {
+        $user = $this->authAs('employer_manager');
+        $employer = Employer::factory()->create(['user_id' => $user->id]);
+
+        $response = $this->actingAs($user)->putJson("/api/employers/{$employer->id}", [
+            'company_name' => 'Put Updated Corp',
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJsonPath('data.company_name', 'Put Updated Corp');
+
+        $this->assertDatabaseHas('employers', [
+            'id' => $employer->id,
+            'company_name' => 'Put Updated Corp',
+        ]);
+    }
+
     public function test_unauthorized_user_cannot_update_other_employer(): void
     {
         $user = $this->authAs('general_user');

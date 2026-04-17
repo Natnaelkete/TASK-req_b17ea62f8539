@@ -73,6 +73,31 @@ class ObjectionTest extends TestCase
             ->assertJson(['message' => 'Objection window has closed (7 days from publication).']);
     }
 
+    public function test_put_update_objection(): void
+    {
+        $reviewer = User::factory()->complianceReviewer()->create();
+        $user = User::factory()->create();
+        $rv = $this->createPublicResult();
+
+        $objection = Objection::create([
+            'result_version_id' => $rv->id,
+            'filed_by' => $user->id,
+            'reason' => 'Put test objection',
+            'status' => 'intake',
+        ]);
+        \App\Models\Ticket::create(['objection_id' => $objection->id, 'status' => 'intake']);
+
+        $response = $this->actingAs($reviewer)->putJson("/api/objections/{$objection->id}", [
+            'status' => 'review',
+        ]);
+        $response->assertStatus(200)->assertJsonPath('data.status', 'review');
+
+        $this->assertDatabaseHas('objections', [
+            'id' => $objection->id,
+            'status' => 'review',
+        ]);
+    }
+
     public function test_objection_status_transitions(): void
     {
         $reviewer = User::factory()->complianceReviewer()->create();

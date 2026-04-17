@@ -83,20 +83,20 @@ Legend for test type:
 | GET /api/employers | Yes | True no-mock HTTP | [repo/tests/Feature/EmployerTest.php](repo/tests/Feature/EmployerTest.php#L73), [repo/API_tests/EmployerApiTest.php](repo/API_tests/EmployerApiTest.php#L40) |
 | GET /api/employers/{id} | Yes | True no-mock HTTP | [repo/tests/Feature/EmployerTest.php](repo/tests/Feature/EmployerTest.php#L97), [repo/API_tests/EmployerApiTest.php](repo/API_tests/EmployerApiTest.php#L49) |
 | POST /api/employers | Yes | True no-mock HTTP | [repo/tests/Feature/EmployerTest.php](repo/tests/Feature/EmployerTest.php#L30), [repo/API_tests/EmployerApiTest.php](repo/API_tests/EmployerApiTest.php#L26) |
-| PUT /api/employers/{id} | No | Unit-only/indirect | No direct putJson call found; PATCH only in [repo/tests/Feature/EmployerTest.php](repo/tests/Feature/EmployerTest.php#L108) and [repo/API_tests/EmployerApiTest.php](repo/API_tests/EmployerApiTest.php#L85) |
+| PUT /api/employers/{id} | Yes | True no-mock HTTP | [repo/tests/Feature/EmployerTest.php](repo/tests/Feature/EmployerTest.php#L121), [repo/API_tests/EmployerApiTest.php](repo/API_tests/EmployerApiTest.php#L96) |
 | PATCH /api/employers/{id} | Yes | True no-mock HTTP | [repo/tests/Feature/EmployerTest.php](repo/tests/Feature/EmployerTest.php#L108), [repo/API_tests/EmployerApiTest.php](repo/API_tests/EmployerApiTest.php#L85) |
 | POST /api/employers/{id}/review | Yes | True no-mock HTTP | [repo/tests/Feature/EmployerTest.php](repo/tests/Feature/EmployerTest.php#L133), [repo/API_tests/EmployerApiTest.php](repo/API_tests/EmployerApiTest.php#L58) |
 | POST /api/employers/{employerId}/jobs | Yes | True no-mock HTTP | [repo/tests/Feature/JobTest.php](repo/tests/Feature/JobTest.php#L33), [repo/API_tests/JobApiTest.php](repo/API_tests/JobApiTest.php#L34) |
 | GET /api/jobs | Yes | True no-mock HTTP | [repo/tests/Feature/JobTest.php](repo/tests/Feature/JobTest.php#L193), [repo/API_tests/JobApiTest.php](repo/API_tests/JobApiTest.php#L49) |
 | GET /api/jobs/{id} | Yes | True no-mock HTTP | [repo/tests/Feature/JobTest.php](repo/tests/Feature/JobTest.php#L204), [repo/API_tests/JobApiTest.php](repo/API_tests/JobApiTest.php#L57) |
-| PUT /api/jobs/{id} | No | Unit-only/indirect | No direct putJson call found; PATCH only in [repo/tests/Feature/JobTest.php](repo/tests/Feature/JobTest.php#L215), [repo/API_tests/JobApiTest.php](repo/API_tests/JobApiTest.php#L65) |
+| PUT /api/jobs/{id} | Yes | True no-mock HTTP | [repo/tests/Feature/JobTest.php](repo/tests/Feature/JobTest.php#L230), [repo/API_tests/JobApiTest.php](repo/API_tests/JobApiTest.php#L74) |
 | PATCH /api/jobs/{id} | Yes | True no-mock HTTP | [repo/tests/Feature/JobTest.php](repo/tests/Feature/JobTest.php#L215), [repo/API_tests/JobApiTest.php](repo/API_tests/JobApiTest.php#L65) |
 | POST /api/jobs/{id}/result-versions | Yes | True no-mock HTTP | [repo/tests/Feature/ResultVersionTest.php](repo/tests/Feature/ResultVersionTest.php#L26), [repo/API_tests/ResultVersionApiTest.php](repo/API_tests/ResultVersionApiTest.php#L28) |
 | PUT /api/result-versions/{id}/status | Yes | True no-mock HTTP | [repo/tests/Feature/ResultVersionTest.php](repo/tests/Feature/ResultVersionTest.php#L52), [repo/API_tests/ResultVersionApiTest.php](repo/API_tests/ResultVersionApiTest.php#L38) |
 | GET /api/result-versions/{id} | Yes | True no-mock HTTP | [repo/tests/Feature/ResultVersionTest.php](repo/tests/Feature/ResultVersionTest.php#L99), [repo/API_tests/ResultVersionApiTest.php](repo/API_tests/ResultVersionApiTest.php#L59) |
 | GET /api/result-versions/{id}/history | Yes | True no-mock HTTP | [repo/tests/Feature/ResultVersionTest.php](repo/tests/Feature/ResultVersionTest.php#L112), [repo/API_tests/ResultVersionApiTest.php](repo/API_tests/ResultVersionApiTest.php#L70) |
 | POST /api/result-versions/{id}/objections | Yes | True no-mock HTTP | [repo/tests/Feature/ObjectionTest.php](repo/tests/Feature/ObjectionTest.php#L36), [repo/API_tests/ObjectionApiTest.php](repo/API_tests/ObjectionApiTest.php#L37) |
-| PUT /api/objections/{id} | No | Unit-only/indirect | No direct putJson call found; PATCH only in [repo/tests/Feature/ObjectionTest.php](repo/tests/Feature/ObjectionTest.php#L91), [repo/API_tests/ObjectionApiTest.php](repo/API_tests/ObjectionApiTest.php#L57) |
+| PUT /api/objections/{id} | Yes | True no-mock HTTP | [repo/tests/Feature/ObjectionTest.php](repo/tests/Feature/ObjectionTest.php#L90), [repo/API_tests/ObjectionApiTest.php](repo/API_tests/ObjectionApiTest.php#L78) |
 | PATCH /api/objections/{id} | Yes | True no-mock HTTP | [repo/tests/Feature/ObjectionTest.php](repo/tests/Feature/ObjectionTest.php#L91), [repo/API_tests/ObjectionApiTest.php](repo/API_tests/ObjectionApiTest.php#L57) |
 | GET /api/objections/{id} | Yes | True no-mock HTTP | [repo/tests/Feature/ObjectionTest.php](repo/tests/Feature/ObjectionTest.php#L158), [repo/API_tests/ObjectionApiTest.php](repo/API_tests/ObjectionApiTest.php#L74) |
 | GET /api/tickets/{id} | Yes | True no-mock HTTP | [repo/tests/Feature/ObjectionTest.php](repo/tests/Feature/ObjectionTest.php#L175), [repo/API_tests/ObjectionApiTest.php](repo/API_tests/ObjectionApiTest.php#L87) |
@@ -107,15 +107,15 @@ Legend for test type:
 | GET /api/inspections | Yes | True no-mock HTTP | [repo/tests/Feature/InspectionTest.php](repo/tests/Feature/InspectionTest.php#L63), [repo/API_tests/InspectionApiTest.php](repo/API_tests/InspectionApiTest.php#L60) |
 | GET /api/inspections/{id} | Yes | True no-mock HTTP | [repo/tests/Feature/InspectionTest.php](repo/tests/Feature/InspectionTest.php#L129), [repo/API_tests/IdorProtectionApiTest.php](repo/API_tests/IdorProtectionApiTest.php#L247) |
 | POST /api/inspections | Yes | True no-mock HTTP | [repo/tests/Feature/InspectionTest.php](repo/tests/Feature/InspectionTest.php#L27), [repo/API_tests/InspectionApiTest.php](repo/API_tests/InspectionApiTest.php#L29) |
-| PUT /api/inspections/{id} | No | Unit-only/indirect | No direct putJson call found; PATCH only in [repo/tests/Feature/InspectionTest.php](repo/tests/Feature/InspectionTest.php#L81) |
+| PUT /api/inspections/{id} | Yes | True no-mock HTTP | [repo/tests/Feature/InspectionTest.php](repo/tests/Feature/InspectionTest.php#L145), [repo/API_tests/InspectionApiTest.php](repo/API_tests/InspectionApiTest.php#L98) |
 | PATCH /api/inspections/{id} | Yes | True no-mock HTTP | [repo/tests/Feature/InspectionTest.php](repo/tests/Feature/InspectionTest.php#L81), [repo/API_tests/IdorProtectionApiTest.php](repo/API_tests/IdorProtectionApiTest.php#L263) |
-| GET /api/inspections/assigned/me | No | Unit-only/indirect | No direct request evidence found in Feature/API test files |
+| GET /api/inspections/assigned/me | Yes | True no-mock HTTP | [repo/tests/Feature/InspectionTest.php](repo/tests/Feature/InspectionTest.php#L178), [repo/API_tests/InspectionApiTest.php](repo/API_tests/InspectionApiTest.php#L115) |
 | POST /api/offline-sync/upload | Yes | True no-mock HTTP | [repo/tests/Feature/OfflineSyncTest.php](repo/tests/Feature/OfflineSyncTest.php#L44), [repo/API_tests/OfflineSyncApiTest.php](repo/API_tests/OfflineSyncApiTest.php#L42) |
 | GET /api/offline-sync/status/{idempotencyKey} | Yes | True no-mock HTTP | [repo/tests/Feature/OfflineSyncTest.php](repo/tests/Feature/OfflineSyncTest.php#L107), [repo/API_tests/OfflineSyncApiTest.php](repo/API_tests/OfflineSyncApiTest.php#L71) |
 | GET /api/content | Yes | True no-mock HTTP | [repo/tests/Feature/ContentItemTest.php](repo/tests/Feature/ContentItemTest.php#L35), [repo/API_tests/ContentItemApiTest.php](repo/API_tests/ContentItemApiTest.php#L28) |
 | GET /api/content/{id} | Yes | True no-mock HTTP | [repo/tests/Feature/ContentItemTest.php](repo/tests/Feature/ContentItemTest.php#L82), [repo/API_tests/ContentItemApiTest.php](repo/API_tests/ContentItemApiTest.php#L43) |
 | POST /api/content | Yes | True no-mock HTTP | [repo/tests/Feature/ContentItemTest.php](repo/tests/Feature/ContentItemTest.php#L90), [repo/API_tests/ContentItemApiTest.php](repo/API_tests/ContentItemApiTest.php#L52) |
-| PUT /api/content/{id} | No | Unit-only/indirect | No direct putJson call found; PATCH only in [repo/tests/Feature/ContentItemTest.php](repo/tests/Feature/ContentItemTest.php#L151) |
+| PUT /api/content/{id} | Yes | True no-mock HTTP | [repo/tests/Feature/ContentItemTest.php](repo/tests/Feature/ContentItemTest.php#L167), [repo/API_tests/ContentItemApiTest.php](repo/API_tests/ContentItemApiTest.php#L161) |
 | PATCH /api/content/{id} | Yes | True no-mock HTTP | [repo/tests/Feature/ContentItemTest.php](repo/tests/Feature/ContentItemTest.php#L151), [repo/API_tests/ContentItemApiTest.php](repo/API_tests/ContentItemApiTest.php#L129) |
 | POST /api/content/{id}/publish | Yes | True no-mock HTTP | [repo/tests/Feature/ContentItemTest.php](repo/tests/Feature/ContentItemTest.php#L123), [repo/API_tests/ContentItemApiTest.php](repo/API_tests/ContentItemApiTest.php#L67) |
 | POST /api/content/{id}/archive | Yes | True no-mock HTTP | [repo/tests/Feature/ContentItemTest.php](repo/tests/Feature/ContentItemTest.php#L183) |
@@ -151,18 +151,13 @@ Legend for test type:
 
 ### 1.5 Coverage Summary
 - Total endpoints: 55
-- Endpoints with HTTP tests (exact method+path): 49
-- Endpoints with true no-mock HTTP tests: 49
-- HTTP coverage percentage: 49/55 = 89.09%
-- True API coverage percentage: 49/55 = 89.09%
+- Endpoints with HTTP tests (exact method+path): 55
+- Endpoints with true no-mock HTTP tests: 55
+- HTTP coverage percentage: 55/55 = 100%
+- True API coverage percentage: 55/55 = 100%
 
 Uncovered exact method+path endpoints:
-1. PUT /api/employers/{id}
-2. PUT /api/jobs/{id}
-3. PUT /api/objections/{id}
-4. PUT /api/inspections/{id}
-5. GET /api/inspections/assigned/me
-6. PUT /api/content/{id}
+- None.
 
 ### 1.6 Unit Test Analysis
 
@@ -219,7 +214,6 @@ Uncovered exact method+path endpoints:
   - Advanced workflow/offline cases tested in Feature suite ([repo/tests/Feature/WorkflowTest.php](repo/tests/Feature/WorkflowTest.php#L195), [repo/tests/Feature/OfflineSyncTest.php](repo/tests/Feature/OfflineSyncTest.php#L231)).
 
 - Gaps:
-  - Exact method coverage gaps (6 endpoints listed above).
   - run_tests.sh includes dependency install fallback (composer install) which is extra-runtime coupling in test runner script ([repo/run_tests.sh](repo/run_tests.sh#L12)).
   - Duplicate suite structure (tests/Unit and unit_tests) increases maintenance overhead.
 
@@ -227,26 +221,24 @@ Uncovered exact method+path endpoints:
 - Inferred project type is backend, so frontend-backend end-to-end browser/mobile flow tests are not mandatory under this scope.
 
 ### 1.10 Tests Check
-- Static integrity: Pass with gaps.
-- Endpoint-method strictness: Partial Pass.
+- Static integrity: Pass.
+- Endpoint-method strictness: Pass.
 - Mocking risk: Low (no explicit mocks found).
 
 ### 1.11 Test Coverage Score
-- Score: 84/100
+- Score: 92/100
 
 ### 1.12 Score Rationale
-- + High route-level HTTP coverage (49/55)
+- + Complete route-level HTTP coverage (55/55)
 - + No explicit mock/stub usage in API/Feature tests
 - + Good permission/validation/negative-path presence
-- - 6 exact method+path endpoints uncovered
 - - Some tests are status-centric with limited payload assertion depth
 - - Test runner includes runtime dependency installation fallback
 
 ### 1.13 Key Gaps
-1. Add exact-method tests for PUT variants currently only PATCH-tested.
-2. Add explicit test for GET /api/inspections/assigned/me.
-3. Tighten assertion depth in status-only tests.
-4. Remove or strictly control composer install fallback in run_tests.sh for deterministic CI behavior.
+1. Tighten assertion depth in status-only tests.
+2. Remove or strictly control composer install fallback in run_tests.sh for deterministic CI behavior.
+3. Consolidate duplicated unit suites (tests/Unit and unit_tests) to reduce maintenance overhead.
 
 ### 1.14 Confidence & Assumptions
 - Confidence: High for static endpoint-to-test mapping.
@@ -256,7 +248,7 @@ Uncovered exact method+path endpoints:
   - Mock detection is limited to visible test code patterns.
 
 ### Test Coverage Audit Verdict
-- PARTIAL PASS
+- PASS
 
 ---
 
@@ -312,7 +304,7 @@ Uncovered exact method+path endpoints:
 ---
 
 ## Final Combined Verdicts
-1. Test Coverage Audit Verdict: PARTIAL PASS
+1. Test Coverage Audit Verdict: PASS
 2. README Audit Verdict: FAIL
 
-Overall strict combined status: NOT ACCEPTED until README hard-gate issue is resolved and uncovered method-specific endpoint tests are added.
+Overall strict combined status: NOT ACCEPTED until README hard-gate issue is resolved.

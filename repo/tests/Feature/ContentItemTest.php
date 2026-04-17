@@ -156,6 +156,22 @@ class ContentItemTest extends TestCase
         $this->assertEquals('New Title', $item->fresh()->title);
     }
 
+    public function test_put_update_content(): void
+    {
+        $author = User::factory()->create();
+        $item = ContentItem::create([
+            'title' => 'Old Title', 'slug' => 'put-old-title',
+            'body' => 'Body', 'status' => 'draft', 'author_id' => $author->id,
+        ]);
+
+        $response = $this->actingAs($author)->putJson("/api/content/{$item->id}", [
+            'title' => 'Put New Title',
+        ]);
+
+        $response->assertStatus(200);
+        $this->assertEquals('Put New Title', $item->fresh()->title);
+    }
+
     public function test_non_author_non_admin_cannot_update(): void
     {
         $author = User::factory()->create();

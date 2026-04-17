@@ -64,6 +64,22 @@ class ObjectionApiTest extends TestCase
     }
 
     /** @test */
+    public function put_update_objection(): void
+    {
+        $reviewer = User::factory()->complianceReviewer()->create();
+        $user = User::factory()->create();
+        $rv = $this->publicResult();
+        $objection = Objection::create([
+            'result_version_id' => $rv->id, 'filed_by' => $user->id,
+            'reason' => 'Put test', 'status' => 'intake',
+        ]);
+        Ticket::create(['objection_id' => $objection->id, 'status' => 'intake']);
+
+        $this->actingAs($reviewer)->putJson("/api/objections/{$objection->id}", ['status' => 'review'])
+            ->assertStatus(200)->assertJsonPath('data.status', 'review');
+    }
+
+    /** @test */
     public function show_objection(): void
     {
         $user = User::factory()->create();

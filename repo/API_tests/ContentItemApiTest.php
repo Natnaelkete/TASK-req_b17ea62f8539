@@ -149,4 +149,17 @@ class ContentItemApiTest extends TestCase
     {
         $this->getJson('/api/content')->assertStatus(401);
     }
+
+    /** @test */
+    public function put_update_content_by_author(): void
+    {
+        $author = User::factory()->create();
+        $item = ContentItem::create([
+            'title' => 'Orig', 'slug' => 'put-orig',
+            'body' => 'b', 'status' => 'draft', 'author_id' => $author->id,
+        ]);
+        $this->actingAs($author)->putJson("/api/content/{$item->id}", [
+            'title' => 'Put Updated',
+        ])->assertStatus(200)->assertJsonPath('data.title', 'Put Updated');
+    }
 }

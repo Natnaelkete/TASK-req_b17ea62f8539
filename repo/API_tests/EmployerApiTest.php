@@ -88,6 +88,17 @@ class EmployerApiTest extends TestCase
         $response->assertStatus(200)->assertJsonPath('data.company_name', 'Updated Corp');
     }
 
+    /** @test */
+    public function put_update_employer_succeeds_for_owner(): void
+    {
+        $user = User::factory()->employerManager()->create();
+        $employer = Employer::factory()->create(['user_id' => $user->id]);
+        $response = $this->actingAs($user)->putJson("/api/employers/{$employer->id}", [
+            'company_name' => 'Put Updated Corp',
+        ]);
+        $response->assertStatus(200)->assertJsonPath('data.company_name', 'Put Updated Corp');
+    }
+
     // === Missing parameters ===
 
     /** @test */

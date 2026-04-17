@@ -1,5 +1,7 @@
 # Workforce Compliance & Inspection Operations Platform
 
+**Project type:** backend
+
 A Laravel-based API platform for workforce compliance management, field inspections, result publication, objection workflows, and governed communications.
 
 ## Quick Start
@@ -64,9 +66,25 @@ docker compose down -v
 
 ## Test Credentials
 
-After first run, a default admin is seeded:
-- **Email**: `admin@workforce.local`
-- **Password**: `Admin@12345678`
+After first run, a demo account is seeded for every role (via `RoleConfigSeeder`). All passwords follow the pattern shown below.
+
+| Role                  | Email                          | Password              |
+|-----------------------|--------------------------------|-----------------------|
+| `system_admin`        | `admin@workforce.local`        | `Admin@12345678`      |
+| `compliance_reviewer` | `reviewer@workforce.local`     | `Reviewer@12345678`   |
+| `employer_manager`    | `employer@workforce.local`     | `Employer@12345678`   |
+| `inspector`           | `inspector@workforce.local`    | `Inspector@12345678`  |
+| `general_user`        | `user@workforce.local`         | `User@12345678`       |
+
+Obtain an API token by calling `POST /api/login` with the email/password for the role you want to exercise.
+
+## Troubleshooting
+
+- **Port 8000 already in use**: set `APP_PORT` in `.env` to an unused port and restart with `docker compose up`.
+- **MySQL fails to start on port 3308**: set `DB_EXTERNAL_PORT` to an unused port in `.env`.
+- **`docker compose` vs `docker-compose`**: both v2 (`docker compose`, space) and legacy v1 (`docker-compose`, hyphen) work; the commands above assume v2 but can be swapped.
+- **Database migrations not applied**: run `docker compose exec app php artisan migrate --seed` to force a migrate + seed.
+- **Auth token rejected (401)**: ensure you pass `Authorization: Bearer <token>` and that your token has not been revoked via `/api/logout`.
 
 ## API Endpoints
 

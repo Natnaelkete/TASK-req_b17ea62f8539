@@ -129,4 +129,57 @@ class InspectionTest extends TestCase
         $response = $this->actingAs($inspector)->getJson("/api/inspections/{$inspection->id}");
         $response->assertStatus(200)->assertJsonPath('data.id', $inspection->id);
     }
+
+    public function test_put_update_inspection(): void
+    {
+        $inspector = User::factory()->inspector()->create();
+        $employer = Employer::factory()->create();
+        $job = Job::factory()->create(['employer_id' => $employer->id]);
+        $inspection = Inspection::create([
+            'job_id' => $job->id,
+            'inspector_id' => $inspector->id,
+            'employer_id' => $employer->id,
+            'scheduled_at' => now()->addDay(),
+        ]);
+
+        $response = $this->actingAs($inspector)->putJson("/api/inspections/{$inspection->id}", [
+            'status' => 'in_progress',
+            'findings' => ['initial_check' => 'pass'],
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJsonPath('data.status', 'in_progress');
+
+        $inspection->refresh();
+        $this->assertEquals('in_progress', $inspection->status);
+        $this->assertNotNull($inspection->started_at);
+    }
+
+    public function test_list_assigned_inspections(): void
+    {
+        $inspector = User::factory()->inspector()->create();
+        $otherInspector = User::factory()->inspector()->create();
+        $employer = Employer::factory()->create();
+        $job = Job::factory()->create(['employer_id' => $employer->id]);
+
+        Inspection::create([
+            'job_id' => $job->id,
+            'inspector_id' => $inspector->id,
+            'employer_id' => $employer->id,
+            'scheduled_at' => now()->addDay(),
+        ]);
+        Inspection::create([
+            'job_id' => $job->id,
+            'inspector_id' => $otherInspector->id,
+            'employer_id' => $employer->id,
+            'scheduled_at' => now()->addDay(),
+        ]);
+
+        $response = $this->actingAs($inspector)->getJson('/api/inspections/assigned/me');
+
+        $response->assertStatus(200);
+        $data = $response->json('data');
+        $this->assertCount(1, $data);
+        $this->assertEquals($inspector->id, $data[0]['inspector_id']);
+    }
 }

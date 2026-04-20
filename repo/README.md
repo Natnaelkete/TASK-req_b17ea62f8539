@@ -51,6 +51,8 @@ The script auto-detects its environment:
 - If run on the host, it starts the `app` container (if not already up) and executes the suite inside it via `docker compose exec`.
 - If run inside the container, it runs the tests directly against the in-memory SQLite DB.
 
+Dependencies are baked into the container image at build time (see `docker/Dockerfile`); the script never installs packages at runtime. If `vendor/` is missing inside the container, the script fails fast and asks you to rebuild the image with `docker compose build app`.
+
 The single command executes all three suites (`unit_tests/`, `API_tests/`, and `tests/` with coverage) and prints a consolidated PASS/FAIL summary.
 
 ### Stop the Application

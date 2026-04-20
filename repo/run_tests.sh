@@ -27,8 +27,9 @@ echo "============================================"
 cd /var/www
 
 if [ ! -d "vendor" ]; then
-    echo "Installing dependencies..."
-    composer install --no-interaction || { echo "Composer install failed"; exit 1; }
+    echo "Error: vendor/ is missing. Dependencies are baked into the image at build time."
+    echo "Rebuild the container image with: docker compose build app"
+    exit 1
 fi
 
 php artisan config:clear 2>/dev/null || true
